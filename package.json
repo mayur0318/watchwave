@@ -4,9 +4,12 @@
   "description": "backend for new project",
   "license": "ISC",
   "author": "mayur parmar",
-  "type": "commonjs",
+  "type": "module",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
   }
 }
