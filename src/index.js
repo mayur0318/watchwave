@@ -1,5 +1,6 @@
 // require("dotenv").config({ path: "./env" });
 import connectDb from "./db/dbConnection.js";
+import { app } from "./app.js";
 
 connectDb()
   .then(() => {
@@ -8,5 +9,5 @@ connectDb()
     });
   })
   .catch((err) => {
-    console.log("Mongodb connection failed !!");
+    console.log("Mongodb connection failed !!", err);
   });
