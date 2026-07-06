@@ -261,4 +261,144 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
   }
 });
 
-export { registerUser, loginUser, logoutUser, refreshAccessToken };
+const updateCurrentPassword = asyncHandler(async (req, res) => {
+  // ---> Steps for updating the current passoward <---
+  // get the old and new password of the user
+  // check the old and new password filed is not empty
+  // find the user for comparing both password
+  // use isPasswordCorrect method ( userModels.js)
+  // if both password( oldPassword & Password in DB) matches then save new password
+  // save the user and send successfull message
+
+  const { oldPassword, newPassword } = req.body;
+
+  if (!oldPassword && !newPassword) {
+    throw new ApiError(401, "Both password required");
+  }
+
+  const user = await User.findById(req.user?._id);
+  const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
+  if (!isPasswordCorrect) {
+    throw new ApiError(401, "Invalid Password");
+  }
+
+  user.password = newPassword;
+  await user.savd({ validateBeforeSave: false });
+
+  return res.status(200).json(200, {}, "Password updated successfully");
+});
+
+const getCurrentUser = asyncHandler(async (req, res) => {
+  return res.status(200).json(200, req.user, " User fetched Successfully!");
+});
+
+const updateAccountDetails = asyncHandler(async (req, res) => {
+  const { fullName, email, userName } = req.body;
+  if (!fullName) {
+    throw new ApiError(400, "FullName is Empty");
+  }
+  if (!userName) {
+    throw new ApiError(400, "UserName is Empty");
+  }
+  if (!email) {
+    throw new ApiError(400, "email is Empty");
+  }
+
+  // Check if email OR username is already taken by a DIFFERENT user
+  const existingUser = await User.findOne({
+    $or: [{ email }, { userName }],
+    _id: { $ne: req.user?._id }, // $ne = "not equal" — excludes the current user
+  });
+
+  if (existingUser) {
+    if (existingUser.email === email) {
+      throw new ApiError(409, "Email is already taken");
+    }
+    if (existingUser.userName === userName) {
+      throw new ApiError(409, "Username is already taken");
+    }
+  }
+  const user = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        fullName,
+        email,
+        userName,
+      },
+    },
+    {
+      new: true,
+    },
+  ).select("-password");
+  return res
+    .status(200)
+    .json(new ApiResponse(200, user, "Details updated successfully"));
+});
+
+const updateUserAvatar = asyncHandler(async (req, res) => {
+  const avatarLocalPath = req.file?.path;
+  if (!avatarLocalPath) {
+    throw new ApiError(400, "Avatar file is missing");
+  }
+
+  const avatar = await uploadOnCloudinary(avatarLocalPath);
+  if (!avatar.url) {
+    throw new ApiError(400, "Error while uploading avatar file");
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        avatar: avatar.url,
+      },
+    },
+    {
+      new: true,
+    },
+  ).select("-password");
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, user, "User Avatar is updated successfully"));
+});
+const updateCoverImage = asyncHandler(async (req, res) => {
+  const coverImageLocalPath = req.file?.path;
+  if (!coverImageLocalPath) {
+    throw new ApiError(400, "Cover image file is missing");
+  }
+
+  const coverImage = await uploadOnCloudinary(coverImageLocalPath);
+  if (!coverImage.url) {
+    throw new ApiError(400, "Error while uploading Cover Image file");
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        coverImage: coverImage.url,
+      },
+    },
+    {
+      new: true,
+    },
+  ).select("-password");
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, user, " Cover Image is updated successfully"));
+});
+
+export {
+  registerUser,
+  loginUser,
+  logoutUser,
+  refreshAccessToken,
+  updateCurrentPassword,
+  getCurrentUser,
+  updateAccountDetails,
+  updateUserAvatar,
+  updateCoverImage,
+};
