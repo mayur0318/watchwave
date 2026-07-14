@@ -284,7 +284,7 @@ const updateCurrentPassword = asyncHandler(async (req, res) => {
   }
 
   user.password = newPassword;
-  await user.savd({ validateBeforeSave: false });
+  await user.save({ validateBeforeSave: false });
 
   return res.status(200).json(200, {}, "Password updated successfully");
 });
