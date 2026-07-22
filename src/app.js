@@ -23,7 +23,11 @@ app.use((req, res, next) => {
 
 //Imports Router
 import userRouter from "./routes/userRouter.js";
+import videoRouter from "./routes/videoRouter.js";
+import subscriptionRouter from "./routes/subscriptionRouter.js";
 
 app.use("/api/v1/user", userRouter);
+app.use("/api/v1/video", videoRouter);
+app.use("/api/v1/subscriptions", subscriptionRouter);
 
 export { app };
