@@ -1,10 +1,11 @@
 import mongoose from "mongoose";
-import { asyncHandler } from "../utils/asyncHandler";
-import { ApiError } from "../utils/ApiError";
-import { uploadOnCloudinary } from "../utils/cloudinary";
-import { Video } from "../models/videoModels";
-import { ApiResponse } from "../utils/ApiResponse";
-import { User } from "../models/userModels";
+import { v2 as cloudinary } from "cloudinary";
+import { asyncHandler } from "../utils/asyncHandler.js";
+import { ApiError } from "../utils/ApiError.js";
+import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import { Video } from "../models/videoModels.js";
+import { ApiResponse } from "../utils/ApiResponse.js";
+import { User } from "../models/userModels.js";
 
 const getAllVideos = asyncHandler(async (req, res) => {
   const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query;
@@ -73,8 +74,8 @@ const getAllVideos = asyncHandler(async (req, res) => {
 const publishAVideo = asyncHandler(async (req, res) => {
   const { title, description } = req.body;
 
-  if ([title, description].some((field) => field?.trim() === "")) {
-    throw new ApiError(400, "Title and Description are requried!");
+  if ([title, description].some((field) => !field?.trim())) {
+    throw new ApiError(400, "Title and Description are required!");
   }
 
   const videoFileLocalPath = req.files?.videoFile?.[0]?.path;
@@ -241,7 +242,7 @@ const deleteVideo = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Invalid VideoId");
   }
 
-  const video = await findById(videoId);
+  const video = await Video.findById(videoId);
   if (!video) {
     throw new ApiError(404, "Video is not found in DB");
   }

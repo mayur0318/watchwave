@@ -25,9 +25,19 @@ app.use((req, res, next) => {
 import userRouter from "./routes/userRouter.js";
 import videoRouter from "./routes/videoRouter.js";
 import subscriptionRouter from "./routes/subscriptionRouter.js";
+import likeRouter from "./routes/likeRouter.js";
+import commentRouter from "./routes/commentRouter.js";
+import playlistRouter from "./routes/playlistRouter.js";
+import tweetRouter from "./routes/tweetRouter.js";
+import dashboardRouter from "./routes/dashboardRouter.js";
 
 app.use("/api/v1/user", userRouter);
 app.use("/api/v1/video", videoRouter);
 app.use("/api/v1/subscriptions", subscriptionRouter);
+app.use("/api/v1/likes", likeRouter);
+app.use("/api/v1/comments", commentRouter);
+app.use("/api/v1/playlists", playlistRouter);
+app.use("/api/v1/tweets", tweetRouter);
+app.use("/api/v1/dashboard", dashboardRouter);
 
 export { app };

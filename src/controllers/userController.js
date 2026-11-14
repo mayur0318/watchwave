@@ -47,9 +47,7 @@ const registerUser = asyncHandler(async (req, res) => {
       }
   */
 
-  if (
-    [userName, fullName, email, password].some((field) => field?.trim() === "")
-  ) {
+  if ([userName, fullName, email, password].some((field) => !field?.trim())) {
     throw new ApiError(400, "All fields are required");
   }
 
@@ -243,7 +241,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
       secure: true,
     };
 
-    const { accessToken, newRefreshToken } =
+    const { accessToken, refreshToken: newRefreshToken } =
       await generateAccessAndRefreshTokens(user._id);
 
     return res
@@ -273,8 +271,8 @@ const updateCurrentPassword = asyncHandler(async (req, res) => {
 
   const { oldPassword, newPassword } = req.body;
 
-  if (!oldPassword && !newPassword) {
-    throw new ApiError(401, "Both password required");
+  if (!oldPassword || !newPassword) {
+    throw new ApiError(400, "Both password required");
   }
 
   const user = await User.findById(req.user?._id);
@@ -286,11 +284,15 @@ const updateCurrentPassword = asyncHandler(async (req, res) => {
   user.password = newPassword;
   await user.save({ validateBeforeSave: false });
 
-  return res.status(200).json(200, {}, "Password updated successfully");
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Password updated successfully"));
 });
 
 const getCurrentUser = asyncHandler(async (req, res) => {
-  return res.status(200).json(200, req.user, " User fetched Successfully!");
+  return res
+    .status(200)
+    .json(new ApiResponse(200, req.user, "User fetched Successfully!"));
 });
 
 const updateAccountDetails = asyncHandler(async (req, res) => {
@@ -344,7 +346,7 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
   }
 
   const avatar = await uploadOnCloudinary(avatarLocalPath);
-  if (!avatar.url) {
+  if (!avatar?.url) {
     throw new ApiError(400, "Error while uploading avatar file");
   }
 
@@ -372,7 +374,7 @@ const updateCoverImage = asyncHandler(async (req, res) => {
   }
 
   const coverImage = await uploadOnCloudinary(coverImageLocalPath);
-  if (!coverImage.url) {
+  if (!coverImage?.url) {
     throw new ApiError(400, "Error while uploading Cover Image file");
   }
 
@@ -403,7 +405,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
   const channel = await User.aggregate([
     {
       $match: {
-        userName: userName?.toLowerCase,
+        userName: userName?.toLowerCase(),
       },
     },
     {
@@ -443,12 +445,11 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
       $project: {
         fullName: 1,
         userName: 1,
-        email: 1,
         avatar: 1,
         coverImage: 1,
-        subscribersCount,
-        channelSubscribedToCount,
-        isSubscribed,
+        subscribersCount: 1,
+        channelSubscribedToCount: 1,
+        isSubscribed: 1,
       },
     },
   ]);
