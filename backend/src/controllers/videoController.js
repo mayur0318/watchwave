@@ -6,6 +6,8 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { Video } from "../models/videoModels.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { User } from "../models/userModels.js";
+import { Like } from "../models/likeModels.js";
+import { Subscription } from "../models/subscriptionModels.js";
 
 const getAllVideos = asyncHandler(async (req, res) => {
   const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query;
@@ -165,17 +167,31 @@ const getVideoById = asyncHandler(async (req, res) => {
     }),
   ]);
 
-  //   await Video.findByIdAndUpdate(videoId, {
-  //     $inc: { views: 1 },
-  //   });
+  const ownerId = video[0].owner?._id;
 
-  //   await User.findByIdAndUpdate(req.user._id, {
-  //     $addToSet: { watchHistory: videoId },
-  //   });
+  const [likesCount, likedByMe, subscribersCount, subscribedByMe] =
+    await Promise.all([
+      Like.countDocuments({ video: videoId }),
+      Like.exists({ video: videoId, likedBy: req.user._id }),
+      ownerId ? Subscription.countDocuments({ channel: ownerId }) : 0,
+      ownerId
+        ? Subscription.exists({ channel: ownerId, subscriber: req.user._id })
+        : null,
+    ]);
 
-  return res
-    .status(200)
-    .json(new ApiResponse(200, video[0], "Video fetched Successfully!!"));
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        ...video[0],
+        likesCount,
+        isLiked: Boolean(likedByMe),
+        subscribersCount,
+        isSubscribed: Boolean(subscribedByMe),
+      },
+      "Video fetched Successfully!!",
+    ),
+  );
 });
 
 const updateVideo = asyncHandler(async (req, res) => {

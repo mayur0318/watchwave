@@ -17,6 +17,13 @@ app.use(express.static("public"));
 app.use(cookieParser());
 
 app.use((req, res, next) => {
+  if (req.body === undefined || req.body === null) {
+    req.body = {};
+  }
+  next();
+});
+
+app.use((req, res, next) => {
   // console.log("REQUEST:", req.method, req.originalUrl);
   next();
 });
@@ -30,6 +37,8 @@ import commentRouter from "./routes/commentRouter.js";
 import playlistRouter from "./routes/playlistRouter.js";
 import tweetRouter from "./routes/tweetRouter.js";
 import dashboardRouter from "./routes/dashboardRouter.js";
+import { errorHandler } from "./middlewares/errorMiddleware.js";
+import { ApiError } from "./utils/ApiError.js";
 
 app.use("/api/v1/user", userRouter);
 app.use("/api/v1/video", videoRouter);
@@ -39,5 +48,9 @@ app.use("/api/v1/comments", commentRouter);
 app.use("/api/v1/playlists", playlistRouter);
 app.use("/api/v1/tweets", tweetRouter);
 app.use("/api/v1/dashboard", dashboardRouter);
+app.use((req, res, next) => {
+  next(new ApiError(404, "Route not found"));
+});
+app.use(errorHandler);
 
 export { app };

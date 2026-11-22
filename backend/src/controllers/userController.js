@@ -5,6 +5,11 @@ import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
+import {
+  accessTokenCookieOptions,
+  refreshTokenCookieOptions,
+  clearCookieOptions,
+} from "../utils/cookieOptions.js";
 
 const generateAccessAndRefreshTokens = async (userId) => {
   try {
@@ -162,24 +167,17 @@ const loginUser = asyncHandler(async (req, res) => {
   const loggedInUser = await User.findById(user._id).select(
     "-password -refreshToken",
   );
-  console.log("Logged In User: ", loggedInUser);
-
-  const options = {
-    httpOnly: true,
-    secure: true,
-  };
+  // console.log("Logged In User: ", loggedInUser);
 
   return res
     .status(200)
-    .cookie("accessToken", accessToken, options)
-    .cookie("refreshToken", refreshToken, options)
+    .cookie("accessToken", accessToken, accessTokenCookieOptions)
+    .cookie("refreshToken", refreshToken, refreshTokenCookieOptions)
     .json(
       new ApiResponse(
         200,
         {
           user: loggedInUser,
-          accessToken,
-          refreshToken,
         },
         "User logged In Successfully",
       ),
@@ -199,16 +197,11 @@ const logoutUser = asyncHandler(async (req, res) => {
       new: true,
     },
   );
-  const options = {
-    httpOnly: true,
-    secure: true,
-  };
 
-  // console.log(updatedUser);
   return res
     .status(200)
-    .clearCookie("accessToken", options)
-    .clearCookie("refreshToken", options)
+    .clearCookie("accessToken", clearCookieOptions)
+    .clearCookie("refreshToken", clearCookieOptions)
     .json(new ApiResponse(200, {}, "User logged out"));
 });
 
@@ -236,25 +229,14 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
       throw new ApiError(401, "Refresh token is expired or used");
     }
 
-    const options = {
-      httpOnly: true,
-      secure: true,
-    };
-
     const { accessToken, refreshToken: newRefreshToken } =
       await generateAccessAndRefreshTokens(user._id);
 
     return res
       .status(200)
-      .cookie("accessToken", accessToken, options)
-      .cookie("refreshToken", newRefreshToken, options)
-      .json(
-        new ApiResponse(
-          200,
-          { accessToken, refreshToken: newRefreshToken },
-          "Access token refreshed",
-        ),
-      );
+      .cookie("accessToken", accessToken, accessTokenCookieOptions)
+      .cookie("refreshToken", newRefreshToken, refreshTokenCookieOptions)
+      .json(new ApiResponse(200, {}, "Access token refreshed"));
   } catch (error) {
     throw new ApiError(401, error?.message || "Invalid refresh token");
   }
@@ -333,7 +315,7 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
     {
       new: true,
     },
-  ).select("-password");
+  ).select("-password -refreshToken");
   return res
     .status(200)
     .json(new ApiResponse(200, user, "Details updated successfully"));
@@ -360,7 +342,7 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
     {
       new: true,
     },
-  ).select("-password");
+  ).select("-password, -refreshToken");
 
   return res
     .status(200)
@@ -388,7 +370,7 @@ const updateCoverImage = asyncHandler(async (req, res) => {
     {
       new: true,
     },
-  ).select("-password");
+  ).select("-password -refreshToken");
 
   return res
     .status(200)
@@ -519,6 +501,26 @@ const getWatchHistory = asyncHandler(async (req, res) => {
     );
 });
 
+const ALLOWED_THEMES = ["auto", "light", "dark"];
+
+const updateTheme = asyncHandler(async (req, res) => {
+  const { theme } = req.body;
+
+  if (typeof theme !== "string" || !ALLOWED_THEMES.includes(theme)) {
+    throw new ApiError(400, "Theme must be one of: auto, light, dark");
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user._id,
+    { $set: { theme } },
+    { new: true, runValidators: true },
+  ).select("-password -refreshToken");
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, user, "Theme updated successfully"));
+});
+
 export {
   registerUser,
   loginUser,
@@ -531,4 +533,5 @@ export {
   updateCoverImage,
   getUserChannelProfile,
   getWatchHistory,
+  updateTheme,
 };
